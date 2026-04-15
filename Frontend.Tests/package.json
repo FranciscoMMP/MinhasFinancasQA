@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "scripts": {
         "test:e2e": "playwright test",
-        "test:unit": "vitest"
+        "test:unit": "vitest run tests/unit"
     },
     "devDependencies": {
         "@playwright/test": "^1.43.0",
