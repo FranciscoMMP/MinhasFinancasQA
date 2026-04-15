@@ -1,41 +1,63 @@
-# Automação de Testes - Minhas Finanças
+# Automação de Testes - Minhas Finanças (QA)
 
-Este repositório contém a suíte de testes desenvolvida para validar as regras de negócio do sistema de controle financeiro. A abordagem utilizada preserva o código original intacto, garantindo a qualidade através de testes unitários, de integração e end-to-end.
+Este repositório contém a suíte de testes desenvolvida para validar as regras de negócio do sistema de controle financeiro. A abordagem que adotei preserva o código original intacto, cumprindo todos os requisitos listados no desafio técnico.
 
-## Estrutura do Projeto
+---
 
-*   **Testes Unitários**: Isolam lógicas e validações de componentes do front-end (`/Frontend.Tests/tests/unit`). Framework utilizado: Vitest.
-*   **Testes de Integração**: Realizam chamadas autônomas aos endpoints do Backend (`/Backend.Tests/IntegrationTests`). Verificam o processamento das transações, restrições e consolidação de saldos utilizando C# (RestSharp e FluentAssertions).
-*   **Testes E2E (End-to-End)**: Validam a comunicação e o fluxo completo do ponto de vista do usuário (`/Frontend.Tests/e2e`). Validam componentes de UI navegando localmente na porta `:5173`. Framework: Playwright.
+## 1. Como você estruturou a pirâmide
+A arquitetura foi implementada em suas três camadas fundamentais com pastas totalmente desacopladas do repositório principal do ecossistema:
 
-## Bugs / Erros Identificados
+* **Base (Testes Unitários):** Isolam as regras matemáticas e verificações de negócio puras (front-end) em `/Frontend.Tests/tests/unit`.
+* **Meio (Testes de Integração):** Realizam chamadas de API autônomas diretamente no projeto C# em `/Backend.Tests/IntegrationTests`. Focam na persistência dos dados e cálculos computados do servidor.
+* **Topo (Testes End-to-End):** Validam a comunicação e o fluxo completo do ponto de vista visual do navegador web em `/Frontend.Tests/e2e`.
 
-Na execução dos testes automatizados, mapeamos as seguintes inconsistências e falhas nas regras de negócio (mais detalhes podem ser acessados nos cards correspondentes):
+## 2. Justificativa das escolhas de testes
+Como o escopo do desafio determina as tecnologias exigidas e proíbe a alteração do código-fonte da aplicação, o meu plano de testes foi inteiramente guiado pela abordagem **Black-Box**. A alocação da cobertura de testes para cada camada teve as seguintes justificativas táticas:
 
-1.  [**Bug 01 - Violação de exclusão em cascata (Foreign Key / Orfandade)**](./bugs/bug-01-cascata.md) 
-2.  [**Bug 02 - Status 500 no endpoint de relatório (Totais)**](./bugs/bug-02-totais-erro-500.md) 
-3.  [**Bug 03 - Retorno Status HTTP 500 para bloqueio de modalidade de categoria**](./bugs/bug-03-categoria-finalidade-erro-500.md)
+* **Testes Unitários:** Optei por focar na validação estrita dos delimitadores lógicos (idade vs. receita e modalidade de categorias) de forma isolada no client-side. A justificativa é que validar a base condicional em milissegundos sem depender da rede blinda a aplicação logo na sua camada mais barata.
+* **Testes de Integração:** A decisão metodológica central foi cobrir os cenários mais complexos do backend (Ex: Deleção em Cascata e Somatório dos Totais) nesta camada. Testei matemática financeira e integridade referencial batendo diretamente na API real (`localhost:5000`), evitando assim a fragilidade (flakiness) comum aos testes de navegador, atestando com precisão a eficácia do Banco de Dados e dos Controllers.
+* **Testes E2E:** Foquei a automação estritamente nas regras *core* de jornada do usuário final. A minha decisão foi não tentar atingir 100% de cobertura estética para manter a leveza da pirâmide. Os testes modelam o fluxo real simulando restrições de negócio ativadas proativamente pela Interface antes da submissão.
 
-## Como executar o projeto
+---
 
-Certifique-se de que a aplicação alvo está iniciada (`docker-compose up -d`).
+## 3. Bugs encontrados (qual regra falhou)
+A partir da execução crua da pirâmide de testes automáticos, investiguei e mapeei três falhas severas nas regras de negócio (amplamente documentadas nos cards da pasta `/bugs`):
 
-### Executando C# (Backend)
+1. **Regra de exclusão em cascata (Falha na Persistência):** 
+   * [Bug 01 - Violação de exclusão em cascata (Orfandade de Transações)](./bugs/bug-01-cascata.md) 
+2. **Regra de consultas de totais por pessoa (Falhou no Status de Retorno HTTP):** 
+   * [Bug 02 - Falha e Status 500 no endpoint de relatório matematico (Totais)](./bugs/bug-02-totais-erro-500.md) 
+3. **Regra de "Categoria só pode ser usada conforme finalidade" (Falhou no Exception Handling):** 
+   * [Bug 03 - Vazamento de Exceção de Domínio retornando HTTP 500 em vez do BadRequest](./bugs/bug-03-categoria-finalidade-erro-500.md)
+
+---
+
+## 4. Como rodar cada tipo de teste
+
+**Pré-requisito (Backend e Frontend onlines):** 
+Certifique-se de que disponibilizou os containers no Docker pela sua máquina.
+```bash
+docker-compose up -d
+```
+
+### Testes de Integração (C# Backend)
 ```bash
 cd Backend.Tests
 dotnet restore
 dotnet test
 ```
 
-### Executando TS (Frontend E2E)
+### Testes Unitários Vitest (TypeScript)
 ```bash
 cd Frontend.Tests
 npm install
-npx playwright test
+npm run test:unit
 ```
 
-### Executando TS (Frontend Únitário)
+### Testes E2E Playwright (TypeScript/UI)
 ```bash
 cd Frontend.Tests
-npm run test:unit
+npm install
+npx playwright install
+npx playwright test
 ```
