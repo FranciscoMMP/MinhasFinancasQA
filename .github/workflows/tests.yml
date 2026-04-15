@@ -1,0 +1,38 @@
+name: CI Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      working-directory: Frontend.Tests
+      run: npm install
+
+    - name: Run Frontend Unit Tests (Vitest)
+      working-directory: Frontend.Tests
+      run: npm run test:unit
+
+  # ---------------------------------------------------------
+  # NOTA DE QA (TESTES E2E E INTEGRAÇÃO DE API):
+  # No mundo real, a esteira rodaria o E2E (Playwright) e a 
+  # Integração (C#) em um "Stage Environment" ou após subir 
+  # os containêres do Docker aqui dentro da Pipeline.
+  # 
+  # Como o limite do repósitorio deste teste exige não termos 
+  # o código fonte/docker da aplicação, os testes de C# / E2E 
+  # irão tomar "Connection Refused" (falta de backend). 
+  # Por issso, mantemos o GH Actions ativando apenas os Unitários.
+  # ---------------------------------------------------------
